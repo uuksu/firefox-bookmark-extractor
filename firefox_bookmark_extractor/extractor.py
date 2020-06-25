@@ -3,29 +3,8 @@
 # Usage: .py
 #
 
-from sys import argv
-from sys import exit
 import sqlite3
-
-
-class Settings:
-    def __init__(self, firefox_profile_path, bookmark_path):
-        self.database_path = '{firefox_profile}/places.sqlite'
-        self.bookmark_path_parts = bookmark_path.split("/")
-
-
-def get_settings():
-    if len(argv) < 3:
-        print("Arguments missing")
-        exit(1)
-
-    firefox_profile = argv[1]
-    bookmark_path = argv[2]
-
-    if len(firefox_profile) == 0 or len(bookmark_path) == 0:
-        print("Argument missing")
-
-    return Settings(firefox_profile, bookmark_path)
+import argparse
 
 
 def get_potential_bookmark_paths(conn, bookmark_path_parts):
@@ -68,22 +47,63 @@ def get_potential_bookmark_paths(conn, bookmark_path_parts):
     return potential_paths
 
 
-def get_urls(conn, bookmark_directory_id):
+def get_urls(conn, bookmark_directory_id, recursive):
+    if recursive is None:
+        recursive = False
+
     cursor = conn.execute(
-        f"SELECT url FROM moz_bookmarks as bm\
+        f"SELECT bm.id, bm.type, url FROM moz_bookmarks as bm\
                             LEFT JOIN moz_places as p ON bm.fk = p.id\
-                            WHERE parent = {bookmark_directory_id} AND type = 1"
+                            WHERE parent = {bookmark_directory_id}"
     )
 
-    return [row[0] for row in cursor.fetchall()]
+    urls = []
+
+    for row in cursor.fetchall():
+        bookmark_id = row[0]
+        bookmark_type = row[1]
+        bookmark_url = row[2]
+
+        # Parse directories (type 2) recursively if needed
+        if bookmark_type == 2 and recursive:
+            urls.extend(get_urls(conn, bookmark_id, recursive))
+            continue
+
+        urls.append(bookmark_url)
+
+    return urls
+
+
+def get_args():
+    parser = argparse.ArgumentParser(
+        description="Tool for extracting bookmarks from Firefox"
+    )
+    parser.add_argument(
+        "firefox_profile_path", type=str, help="Path to Firefox profile directory"
+    )
+    parser.add_argument(
+        "bookmark_path",
+        type=str,
+        help="Path to directory inside Firefox bookmark hierarchy",
+    )
+    parser.add_argument(
+        "-r",
+        "--recursive",
+        action="store_true",
+        help="Bookmark directory is extracted recursively",
+    )
+
+    return parser.parse_args()
 
 
 def main():
-    settings = get_settings()
+    args = get_args()
 
-    conn = sqlite3.connect(settings.database_path)
+    database_path = f"{args.firefox_profile_path}/places.sqlite"
+    conn = sqlite3.connect(database_path)
 
-    potential_paths = get_potential_bookmark_paths(conn, settings.bookmark_path_parts)
+    bookmark_path_parts = args.bookmark_path.split("/")
+    potential_paths = get_potential_bookmark_paths(conn, bookmark_path_parts)
 
     if len(potential_paths) > 1:
         print(
@@ -93,7 +113,7 @@ def main():
     if len(potential_paths) == 0:
         print("No matching bookmark path found!")
 
-    urls = get_urls(conn, potential_paths[0])
+    urls = get_urls(conn, potential_paths[0], args.recursive)
     for url in urls:
         print(url)
 

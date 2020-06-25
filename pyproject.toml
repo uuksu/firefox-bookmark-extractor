@@ -10,6 +10,7 @@ extractor = "firefox_bookmark_extractor.extractor:main"
 
 [tool.poetry.dependencies]
 python = "^3.8"
+argparse = "^1.4.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
