@@ -1,9 +1,10 @@
 [tool.poetry]
 name = "firefox_bookmark_extractor"
-version = "0.1.0"
-description = ""
+version = "1.0.0"
+description = "Firefox Bookmark Extractor can be used to extract urls from Firefox bookmarks. Scripts taps to Firefox's internal database and extracts data from required bookmark path."
 authors = ["Mikko Uuksulainen <mikko.uuksulainen@uuksu.fi>"]
 readme = "README.md"
+repository = "https://github.com/uuksu/firefox-bookmark-extractor"
 
 [tool.poetry.scripts]
 firefox-bookmark-extractor = "firefox_bookmark_extractor.extractor:main"

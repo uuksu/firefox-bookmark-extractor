@@ -25,4 +25,4 @@ https://www.youtube.com/watch?v=TzXXHVhGXTQ
 
 * First parameter is path to Firefox profile directory. This directory contains 'places.sqlite' database.
 * Second parameter is path inside Firefox bookmark hierarchy excluding root directory.
-* -r/--recursive parameter can be used to extract urls also from directories under the target pat
+* -r/--recursive parameter can be used to extract urls also from directories under the target path.
